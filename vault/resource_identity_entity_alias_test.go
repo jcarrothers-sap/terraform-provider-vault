@@ -13,6 +13,7 @@ import (
 
 func TestAccIdentityEntityAlias(t *testing.T) {
 	entity := acctest.RandomWithPrefix("my-entity")
+	entityAlt := acctest.RandomWithPrefix("my-entity")
 
 	nameEntity := "vault_identity_entity.entity"
 	nameEntityAlias := "vault_identity_entity_alias.entity-alias"
@@ -23,7 +24,7 @@ func TestAccIdentityEntityAlias(t *testing.T) {
 		Providers:    testProviders,
 		CheckDestroy: testAccCheckIdentityEntityAliasDestroy,
 		Steps: []resource.TestStep{
-			{
+			{ // Creation
 				Config: testAccIdentityEntityAliasConfig(entity, false),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(nameEntityAlias, "name", entity),
@@ -31,9 +32,17 @@ func TestAccIdentityEntityAlias(t *testing.T) {
 					resource.TestCheckResourceAttrPair(nameEntityAlias, "mount_accessor", nameGithubA, "accessor"),
 				),
 			},
-			{
+			{ // Duplicates Check
 				Config:      testAccIdentityEntityAliasConfig(entity, true),
 				ExpectError: regexp.MustCompile(`IdentityEntityAlias.*already exists.*may be imported`),
+			},
+			{ // Change name attribute
+				Config: testAccIdentityEntityAliasConfig(entityAlt, false),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(nameEntityAlias, "name", entityAlt),
+					resource.TestCheckResourceAttrPair(nameEntityAlias, "canonical_id", nameEntity, "id"),
+					resource.TestCheckResourceAttrPair(nameEntityAlias, "mount_accessor", nameGithubA, "accessor"),
+				),
 			},
 		},
 	})
